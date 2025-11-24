@@ -150,13 +150,20 @@ class EXPORT VoodooI2CControllerDriver : public IOService {
     IOLock* i2c_bus_lock = nullptr;
     bool is_interrupt_registered = false;
 
-    /* Requests the nub to fetch bus configuration values from the ACPI tables
+    /* Request a 32-bit value property from this service or any parent in the
+     * IOService tree.
+     * @key Property name to lookup in IOService tree.
      *
-     * This function evaluates the *SSCN* and *FMCN* methods in the ACPI tables via
-     * <VoodooI2CControllerNub::getACPIParams>.
+     * @return Property value on success, 0 on failure.
+     */
+    UInt32 getNumProperty(const char *key);
+
+    /* Calculates bus timings using ACPI and Controller properties.
      *
-     * @return *kIOReturnSuccess* if all desired values were obtained, *kIOReturnNotFound( if (some or all)
-     * configuration values are missing
+     * Controller properties are polled for input clock rates, SDA hold times, and other values.
+     * The ACPI functions *SSCN* and *FMCN* methods (if present) are used to override the above defaults.
+     *
+     * @return *kIOReturnSuccess* on success, *kIOReturnNotFound if the *kI2CPropClkKey* property is missing.
      */
 
     IOReturn getBusConfig();
