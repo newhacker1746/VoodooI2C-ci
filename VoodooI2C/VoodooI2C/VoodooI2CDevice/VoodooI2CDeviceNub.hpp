@@ -159,6 +159,7 @@ class EXPORT VoodooI2CDeviceNub : public IOService {
      */
 
     IOReturn writeI2C(UInt8* values, UInt16 length);
+    IOReturn writeI2CToAddress(UInt16 address, UInt8* values, UInt16 length);
 
     /* Transmits an I2C write-read request to the slave device
      * @write_buffer A buffer containing the message to be written
@@ -173,6 +174,7 @@ class EXPORT VoodooI2CDeviceNub : public IOService {
 
 
     IOReturn writeReadI2C(UInt8* write_buffer, UInt16 write_length, UInt8* read_buffer, UInt16 read_length);
+    IOReturn writeReadI2CToAddress(UInt16 address, UInt8* write_buffer, UInt16 write_length, UInt8* read_buffer, UInt16 read_length);
 
     /* Evaluate _DSM for specific GUID and function index. Assume Revision ID is 1 for now.
      * @uuid Human-readable GUID string (big-endian)
@@ -206,6 +208,20 @@ class EXPORT VoodooI2CDeviceNub : public IOService {
     bool has_gpio_interrupts {false};
     bool use_10bit_addressing {false};
     IOWorkLoop* work_loop = nullptr;
+
+    struct I2CWriteRequest {
+        UInt16 address;
+        UInt8* values;
+        UInt16 length;
+    };
+
+    struct I2CWriteReadRequest {
+        UInt16 address;
+        UInt8* write_buffer;
+        UInt16 write_length;
+        UInt8* read_buffer;
+        UInt16 read_length;
+    };
 
     /* Check if a valid interrupt is available less than 0x2f
      *
@@ -271,6 +287,7 @@ class EXPORT VoodooI2CDeviceNub : public IOService {
      */
 
     IOReturn writeI2CGated(UInt8* values, UInt16* length);
+    IOReturn writeI2CToAddressGated(I2CWriteRequest* request);
 
     /* Transmits an I2C write-read request to the slave device
      * @write_buffer A buffer containing the message to be written
@@ -284,6 +301,7 @@ class EXPORT VoodooI2CDeviceNub : public IOService {
      */
 
     IOReturn writeReadI2CGated(UInt8* write_buffer, UInt16* write_length, UInt8* read_buffer, UInt16* read_length);
+    IOReturn writeReadI2CToAddressGated(I2CWriteReadRequest* request);
 
     /* Check if a boot-arg is present
      *

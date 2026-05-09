@@ -376,16 +376,36 @@ IOReturn VoodooI2CDeviceNub::writeI2C(UInt8 *values, UInt16 length) {
 }
 
 IOReturn VoodooI2CDeviceNub::writeI2CGated(UInt8* values, UInt16* length) {
+    I2CWriteRequest request {
+        .address = i2c_address,
+        .values = values,
+        .length = *length,
+    };
+
+    return writeI2CToAddressGated(&request);
+}
+
+IOReturn VoodooI2CDeviceNub::writeI2CToAddress(UInt16 address, UInt8 *values, UInt16 length) {
+    I2CWriteRequest request {
+        .address = address,
+        .values = values,
+        .length = length,
+    };
+
+    return command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooI2CDeviceNub::writeI2CToAddressGated), &request);
+}
+
+IOReturn VoodooI2CDeviceNub::writeI2CToAddressGated(I2CWriteRequest* request) {
     UInt16 flags = 0;
     if (use_10bit_addressing)
         flags = I2C_M_TEN;
 
     VoodooI2CControllerBusMessage msgs[] = {
         {
-            .address = i2c_address,
-            .buffer = values,
+            .address = request->address,
+            .buffer = request->values,
             .flags = flags,
-            .length = *length,
+            .length = request->length,
         },
     };
     return controller->transferI2C(msgs, 1);
@@ -395,6 +415,30 @@ IOReturn VoodooI2CDeviceNub::writeReadI2C(UInt8 *write_buffer, UInt16 write_leng
     return command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooI2CDeviceNub::writeReadI2CGated), write_buffer, &write_length, read_buffer, &read_length);
 }
 IOReturn VoodooI2CDeviceNub::writeReadI2CGated(UInt8* write_buffer, UInt16* write_length, UInt8* read_buffer, UInt16* read_length) {
+    I2CWriteReadRequest request {
+        .address = i2c_address,
+        .write_buffer = write_buffer,
+        .write_length = *write_length,
+        .read_buffer = read_buffer,
+        .read_length = *read_length,
+    };
+
+    return writeReadI2CToAddressGated(&request);
+}
+
+IOReturn VoodooI2CDeviceNub::writeReadI2CToAddress(UInt16 address, UInt8 *write_buffer, UInt16 write_length, UInt8 *read_buffer, UInt16 read_length) {
+    I2CWriteReadRequest request {
+        .address = address,
+        .write_buffer = write_buffer,
+        .write_length = write_length,
+        .read_buffer = read_buffer,
+        .read_length = read_length,
+    };
+
+    return command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooI2CDeviceNub::writeReadI2CToAddressGated), &request);
+}
+
+IOReturn VoodooI2CDeviceNub::writeReadI2CToAddressGated(I2CWriteReadRequest* request) {
     UInt16 read_flags = I2C_M_RD;
     if (use_10bit_addressing)
         read_flags |= I2C_M_TEN;
@@ -405,16 +449,16 @@ IOReturn VoodooI2CDeviceNub::writeReadI2CGated(UInt8* write_buffer, UInt16* writ
         write_flags = I2C_M_TEN;
     VoodooI2CControllerBusMessage msgs[] = {
         {
-            .address = i2c_address,
-            .buffer = write_buffer,
+            .address = request->address,
+            .buffer = request->write_buffer,
             .flags = write_flags,
-            .length = *write_length,
+            .length = request->write_length,
         },
         {
-            .address = i2c_address,
-            .buffer = read_buffer,
+            .address = request->address,
+            .buffer = request->read_buffer,
             .flags = read_flags,
-            .length = *read_length,
+            .length = request->read_length,
         }
     };
     return controller->transferI2C(msgs, 2);
